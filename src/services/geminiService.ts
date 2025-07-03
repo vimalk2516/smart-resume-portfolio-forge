@@ -68,36 +68,103 @@ class GeminiService {
   }
 
   async enhanceCareerObjective(personalInfo: any, experience: any[], skills: any): Promise<string> {
+    const experienceLevel = this.determineExperienceLevel(experience);
+    const primarySkills = skills.technical.slice(0, 5).join(', ');
+    const industryFocus = this.detectIndustryFocus(experience, skills);
+    
     const prompt = `
-Create a professional career objective for a resume based on this information:
+You are an expert career counselor. Create a compelling, ATS-optimized career objective that will grab recruiters' attention.
 
-Personal Info:
+CANDIDATE PROFILE:
 - Name: ${personalInfo.fullName}
-- Email: ${personalInfo.email}
+- Experience Level: ${experienceLevel}
 - Location: ${personalInfo.location}
+- Industry Focus: ${industryFocus}
 
-Experience:
-${experience.map(exp => `- ${exp.role} at ${exp.company} (${exp.duration}): ${exp.description}`).join('\n')}
+PROFESSIONAL EXPERIENCE:
+${experience.map(exp => `• ${exp.role} at ${exp.company} (${exp.duration})
+  Achievements: ${exp.description}`).join('\n')}
 
-Skills:
-Technical: ${skills.technical.join(', ')}
-Soft: ${skills.soft.join(', ')}
+CORE COMPETENCIES:
+Technical Skills: ${primarySkills}
+Leadership/Soft Skills: ${skills.soft.join(', ')}
 
-Write a concise, professional career objective (2-3 sentences) that highlights their strengths and career goals. Make it specific to their background and aspirations.
+INSTRUCTIONS:
+1. Write a powerful 2-3 sentence career objective
+2. Start with their experience level and strongest skills
+3. Mention specific industry/role targets
+4. Include quantifiable impact language
+5. Use action-oriented, confident tone
+6. Make it ATS-friendly with relevant keywords
+7. Align with current job market trends
+
+Focus on what they can DELIVER to employers, not what they want to receive.
 `;
 
     return this.makeRequest(prompt);
   }
 
+  private determineExperienceLevel(experience: any[]): string {
+    const totalYears = experience.reduce((acc, exp) => {
+      const duration = exp.duration.toLowerCase();
+      if (duration.includes('year')) {
+        const match = duration.match(/(\d+)\s*year/);
+        return acc + (match ? parseInt(match[1]) : 1);
+      }
+      return acc + 0.5; // Assume 6 months for non-specific durations
+    }, 0);
+
+    if (totalYears < 1) return 'Entry-level professional';
+    if (totalYears < 3) return 'Junior-level professional';
+    if (totalYears < 6) return 'Mid-level professional';
+    if (totalYears < 10) return 'Senior professional';
+    return 'Executive-level professional';
+  }
+
+  private detectIndustryFocus(experience: any[], skills: any): string {
+    const techSkills = skills.technical.join(' ').toLowerCase();
+    const expText = experience.map(e => `${e.role} ${e.description}`).join(' ').toLowerCase();
+    
+    if (techSkills.includes('react') || techSkills.includes('frontend') || techSkills.includes('javascript')) {
+      return 'Frontend Development';
+    }
+    if (techSkills.includes('backend') || techSkills.includes('api') || techSkills.includes('server')) {
+      return 'Backend Development';
+    }
+    if (techSkills.includes('data') || techSkills.includes('python') || techSkills.includes('sql')) {
+      return 'Data Science/Analytics';
+    }
+    if (expText.includes('marketing') || expText.includes('campaign')) {
+      return 'Digital Marketing';
+    }
+    return 'Technology';
+  }
+
   async enhanceJobDescription(role: string, company: string, basicDescription: string): Promise<string> {
     const prompt = `
-Enhance this job description for a resume:
+You are an expert resume writer and career coach. Transform this job description into a compelling, ATS-optimized resume entry.
 
-Role: ${role}
+ROLE DETAILS:
+Position: ${role}
 Company: ${company}
 Current Description: ${basicDescription}
 
-Rewrite this to be more professional and impactful. Use action verbs, quantify achievements where possible (you can add reasonable estimates), and highlight key responsibilities and accomplishments. Keep it concise but compelling (3-4 bullet points or sentences).
+ENHANCEMENT REQUIREMENTS:
+1. Start each bullet with powerful action verbs (Led, Developed, Implemented, Optimized)
+2. Quantify achievements with realistic metrics (increase %, cost savings, team size)
+3. Use industry-relevant keywords for ATS optimization
+4. Highlight both technical skills and business impact
+5. Focus on outcomes and results, not just responsibilities
+6. Keep each bullet to 1-2 lines maximum
+7. Use present tense for current roles, past tense for previous roles
+
+STRUCTURE: Return 3-4 bullet points that showcase:
+• Technical/core competencies used
+• Quantifiable achievements and impact
+• Leadership or collaboration aspects
+• Process improvements or innovations
+
+Make this role sound impressive while remaining truthful and professional.
 `;
 
     return this.makeRequest(prompt);
@@ -117,26 +184,61 @@ Rewrite this to be more professional and highlight technical achievements. Focus
     return this.makeRequest(prompt);
   }
 
-  async suggestSkills(role: string, experience: any[]): Promise<{ technical: string[], soft: string[] }> {
+  async suggestSkills(experienceData: any[], existingSkills: any): Promise<{ technical: string[], soft: string[] }> {
+    const currentYear = new Date().getFullYear();
+    const experienceText = experienceData.map(exp => `${exp.role}: ${exp.description}`).join(' ');
+    const currentTech = existingSkills.technical.join(', ');
+    const currentSoft = existingSkills.soft.join(', ');
+    
     const prompt = `
-Based on this career information, suggest additional relevant skills:
+You are a tech recruitment expert and skills advisor. Analyze this professional profile and suggest highly relevant, in-demand skills.
 
-Target Role: ${role}
-Experience:
-${experience.map(exp => `- ${exp.role} at ${exp.company}: ${exp.description}`).join('\n')}
+CURRENT PROFILE:
+Experience Summary: ${experienceText}
+Existing Technical Skills: ${currentTech}
+Existing Soft Skills: ${currentSoft}
 
-Provide a JSON response with suggested skills in this format:
+ANALYSIS REQUIREMENTS:
+1. Identify the primary career track/domain
+2. Research current ${currentYear} job market trends for this field
+3. Suggest complementary skills that enhance marketability
+4. Focus on skills that pair well with existing competencies
+5. Include emerging technologies and methodologies
+6. Avoid duplicating existing skills
+
+SKILL CATEGORIES TO CONSIDER:
+Technical: Frameworks, tools, platforms, methodologies relevant to their domain
+Soft: Leadership, communication, project management skills valued by employers
+
+Return JSON format:
 {
-  "technical": ["skill1", "skill2", "skill3"],
-  "soft": ["skill1", "skill2", "skill3"]
+  "technical": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "soft": ["skill1", "skill2", "skill3", "skill4", "skill5"]
 }
 
-Focus on skills that are commonly required for this role and align with their experience. Limit to 5 skills per category.
+Prioritize skills that:
+- Are frequently requested in job postings
+- Complement their existing skill set
+- Match current industry trends
+- Improve their promotion/salary potential
 `;
 
     const response = await this.makeRequest(prompt);
     try {
-      return JSON.parse(response.replace(/```json\n?|\n?```/g, ''));
+      const suggestions = JSON.parse(response.replace(/```json\n?|\n?```/g, ''));
+      // Filter out existing skills
+      return {
+        technical: suggestions.technical.filter(skill => 
+          !existingSkills.technical.some(existing => 
+            existing.toLowerCase() === skill.toLowerCase()
+          )
+        ),
+        soft: suggestions.soft.filter(skill => 
+          !existingSkills.soft.some(existing => 
+            existing.toLowerCase() === skill.toLowerCase()
+          )
+        )
+      };
     } catch {
       return { technical: [], soft: [] };
     }
@@ -221,6 +323,27 @@ Extract all available information and organize it properly. If some fields are m
       console.error('Failed to parse PDF content:', error);
       throw new Error('Failed to extract resume data');
     }
+  }
+
+  async enhanceCustomContent(content: string, sectionType: string, title: string): Promise<string> {
+    const prompt = `
+Enhance this resume section content for maximum professional impact:
+
+Section Type: ${sectionType}
+Section Title: ${title}
+Current Content: ${content}
+
+Instructions:
+1. Make it more professional and compelling
+2. Use action verbs and quantifiable achievements
+3. Optimize for ATS systems
+4. Keep the tone consistent with professional resume standards
+5. Maintain the original intent but enhance clarity and impact
+
+Return only the enhanced content, no additional formatting.
+`;
+
+    return this.makeRequest(prompt);
   }
 
   async generatePortfolioContent(resumeData: any): Promise<string> {

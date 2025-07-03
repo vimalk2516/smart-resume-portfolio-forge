@@ -13,6 +13,7 @@ import { ExperienceForm } from './forms/ExperienceForm';
 import { SkillsForm } from './forms/SkillsForm';
 import { ProjectsForm } from './forms/ProjectsForm';
 import { CertificationsForm } from './forms/CertificationsForm';
+import { CustomOptionsForm } from './forms/CustomOptionsForm';
 import { UploadForm } from './forms/UploadForm';
 import { PromptForm } from './forms/PromptForm';
 
@@ -25,14 +26,15 @@ interface ResumeFormProps {
 }
 
 const steps = [
-  { id: 'personal', title: 'Personal Info', component: PersonalInfoForm },
-  { id: 'objective', title: 'Career Objective', component: null },
-  { id: 'education', title: 'Education', component: EducationForm },
-  { id: 'experience', title: 'Experience', component: ExperienceForm },
-  { id: 'skills', title: 'Skills', component: SkillsForm },
-  { id: 'projects', title: 'Projects', component: ProjectsForm },
-  { id: 'certifications', title: 'Certifications', component: CertificationsForm },
-  { id: 'languages', title: 'Languages', component: null },
+  { id: 'personal', title: 'Personal Info', component: PersonalInfoForm, required: true },
+  { id: 'objective', title: 'Career Objective', component: null, required: false },
+  { id: 'education', title: 'Education', component: EducationForm, required: true },
+  { id: 'experience', title: 'Experience', component: ExperienceForm, required: false },
+  { id: 'skills', title: 'Skills', component: SkillsForm, required: true },
+  { id: 'projects', title: 'Projects', component: ProjectsForm, required: false },
+  { id: 'certifications', title: 'Certifications', component: CertificationsForm, required: false },
+  { id: 'custom', title: 'Custom Sections', component: CustomOptionsForm, required: false },
+  { id: 'languages', title: 'Languages', component: null, required: false },
 ];
 
 export const ResumeForm: React.FC<ResumeFormProps> = ({
@@ -158,11 +160,40 @@ export const ResumeForm: React.FC<ResumeFormProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{currentStepData?.title}</CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {currentStepData?.title}
+              {currentStepData?.required && <span className="text-destructive">*</span>}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {currentStepData?.required ? 'Required section' : 'Optional - but recommended'}
+            </p>
+          </div>
           <div className="text-sm text-muted-foreground">
             Step {currentStep} of {steps.length}
           </div>
         </div>
+        
+        {/* Step Navigation Pills */}
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {steps.map((step, index) => (
+            <button
+              key={step.id}
+              onClick={() => onStepChange(index + 1)}
+              className={`flex-shrink-0 px-3 py-1 rounded-full text-xs transition-colors ${
+                index + 1 === currentStep
+                  ? 'bg-primary text-primary-foreground'
+                  : index + 1 < currentStep
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {index + 1}. {step.title}
+              {step.required && <span className="ml-1">*</span>}
+            </button>
+          ))}
+        </div>
+        
         <div className="w-full bg-muted rounded-full h-2">
           <div 
             className="bg-primary h-2 rounded-full transition-all duration-300"

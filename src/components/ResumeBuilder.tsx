@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Upload, Sparkles } from 'lucide-react';
 import { StartMethodSelector } from './StartMethodSelector';
 import { ResumeForm } from './ResumeForm';
 import { ResumePreview } from './ResumePreview';
+import { PortfolioGenerator } from './PortfolioGenerator';
 
 export type StartMethod = 'scratch' | 'upload' | 'prompt';
 
@@ -63,6 +64,32 @@ const ResumeBuilder = () => {
     certifications: [],
     languages: []
   });
+
+  // Memory-based storage for resume data
+  useEffect(() => {
+    const savedData = localStorage.getItem('resumeBuilderData');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setResumeData(parsed.resumeData || resumeData);
+        setStartMethod(parsed.startMethod || null);
+        setCurrentStep(parsed.currentStep || 0);
+      } catch (error) {
+        console.error('Failed to load saved resume data:', error);
+      }
+    }
+  }, []);
+
+  // Auto-save resume data
+  useEffect(() => {
+    const dataToSave = {
+      resumeData,
+      startMethod,
+      currentStep,
+      lastSaved: new Date().toISOString()
+    };
+    localStorage.setItem('resumeBuilderData', JSON.stringify(dataToSave));
+  }, [resumeData, startMethod, currentStep]);
 
   const handleStartMethodSelect = (method: StartMethod) => {
     setStartMethod(method);
@@ -172,6 +199,12 @@ const ResumeBuilder = () => {
               currentStep={currentStep}
               onStepChange={setCurrentStep}
             />
+            
+            {/* Portfolio Generator - Show only when resume has substantial content */}
+            {(resumeData.personalInfo.fullName && 
+              (resumeData.experience.length > 0 || resumeData.projects.length > 0)) && (
+              <PortfolioGenerator data={resumeData} />
+            )}
           </div>
           
           {/* Preview Section */}

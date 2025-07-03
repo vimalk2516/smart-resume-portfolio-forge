@@ -33,7 +33,7 @@ export const SkillsForm: React.FC<SkillsFormProps> = ({ data, onDataUpdate }) =>
   const suggestSkills = async () => {
     try {
       const { geminiService } = await import('@/services/geminiService');
-      const suggestions = await geminiService.suggestSkills('Software Developer', data.experience);
+      const suggestions = await geminiService.suggestSkills(data.experience, data.skills);
       
       // Merge suggestions with existing skills
       const newSkills = {
