@@ -365,6 +365,52 @@ Make it engaging, professional, and SEO-optimized. Use HTML structure with appro
     return this.makeRequest(prompt, { maxOutputTokens: 2048 });
   }
 
+  async comprehensiveResumeEnhancement(userInput: any): Promise<any> {
+    const prompt = `
+You are a professional AI assistant trained for resume and portfolio creation. Your job is to:
+
+🎯 Fix inaccurate, low-quality, or broken data (e.g., poorly extracted from PDFs)  
+🎯 Convert raw or incomplete input into a polished, ATS-friendly resume  
+🎯 Optimize content tone, structure, and language  
+🎯 Make each section relevant, specific, and concise  
+🎯 Generate a clean, SEO-optimized **Portfolio Intro**  
+🎯 Ensure shareable-ready output for web and PDF export
+
+Based on the structured input, return:
+
+{
+  "careerSummary": "Short, crisp and job-focused summary",
+  "fixedSkills": ["Expanded and relevant skills"],
+  "projectDescriptions": ["Optimized in action-result format"],
+  "experienceDescriptions": ["Enhanced with impact and clarity"],
+  "portfolioIntro": "SEO-optimized professional intro",
+  "fixedResumeBody": "Full resume content block with formatting ready for export",
+  "shareableSlug": "auto-generate a clean title for a public portfolio/resume link"
+}
+
+🎯 Guidelines:
+- Rewrite broken or improperly extracted sentences clearly
+- Prioritize **relevance, impact, and correctness**
+- Avoid vague or repetitive phrases
+- Enhance clarity with strong action verbs
+- Generate smart suggestions if data is weak or incomplete
+
+📝 Here is the raw user input (from upload, text, or manual entry):
+
+${JSON.stringify(userInput, null, 2)}
+
+Respond with valid JSON only, no additional text or formatting.
+`;
+
+    const response = await this.makeRequest(prompt, { maxOutputTokens: 2048 });
+    try {
+      return JSON.parse(response.replace(/```json\n?|\n?```/g, ''));
+    } catch (error) {
+      console.error('Failed to parse comprehensive enhancement response:', error);
+      throw new Error('Failed to enhance resume data');
+    }
+  }
+
   async getChatBotResponse(userMessage: string, resumeData?: any): Promise<{ message: string, suggestion?: any }> {
     const contextInfo = resumeData ? `\n\nCURRENT RESUME DATA:\n${JSON.stringify(resumeData, null, 2)}` : '';
     
