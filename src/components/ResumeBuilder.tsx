@@ -6,6 +6,7 @@ import { StartMethodSelector } from './StartMethodSelector';
 import { ResumeForm } from './ResumeForm';
 import { ResumePreview } from './ResumePreview';
 import { PortfolioGenerator } from './PortfolioGenerator';
+import { ChatBot } from './ChatBot';
 
 export type StartMethod = 'scratch' | 'upload' | 'prompt';
 
@@ -100,6 +101,13 @@ const ResumeBuilder = () => {
     setResumeData(prev => ({ ...prev, ...data }));
   };
 
+  const handleChatBotSuggestion = (suggestion: any) => {
+    if (suggestion.type === 'general') {
+      // For general suggestions, we could show a toast or highlight relevant sections
+      console.log('AI Suggestion:', suggestion.content);
+    }
+  };
+
   const renderStartMethod = () => {
     const methods = [
       {
@@ -174,6 +182,11 @@ const ResumeBuilder = () => {
             </p>
           </div>
         </div>
+
+        <ChatBot 
+          resumeData={resumeData}
+          onSuggestion={handleChatBotSuggestion}
+        />
       </div>
     );
   };
@@ -213,6 +226,11 @@ const ResumeBuilder = () => {
           </div>
         </div>
       </div>
+
+      <ChatBot 
+        resumeData={resumeData}
+        onSuggestion={handleChatBotSuggestion}
+      />
     </div>
   );
 };

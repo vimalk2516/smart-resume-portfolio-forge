@@ -57,14 +57,53 @@ export const UploadForm: React.FC<UploadFormProps> = ({ onDataUpdate }) => {
   };
 
   const extractPDFText = async (pdfBuffer: Uint8Array): Promise<string> => {
-    // Simple PDF text extraction fallback
-    // In a real implementation, you'd use a proper PDF parser
-    const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(pdfBuffer);
-    
-    // Extract readable text patterns from PDF
-    const textMatches = text.match(/[A-Za-z0-9\s\.\,\@\-\(\)\+]+/g);
-    return textMatches ? textMatches.join(' ').slice(0, 5000) : 'Unable to extract text from PDF';
+    try {
+      // Import pdf-lib for better PDF parsing
+      const { PDFDocument } = await import('pdf-lib');
+      
+      // Load the PDF document
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const pages = pdfDoc.getPages();
+      
+      let extractedText = '';
+      
+      // For basic text extraction, we'll use a more sophisticated approach
+      // Note: This is still a simplified version - for production, consider using pdf-parse or similar
+      const decoder = new TextDecoder('utf-8');
+      const pdfString = decoder.decode(pdfBuffer);
+      
+      // Extract text patterns more intelligently
+      const textMatches = pdfString.match(/\(([^)]+)\)/g);
+      if (textMatches) {
+        extractedText = textMatches
+          .map(match => match.slice(1, -1)) // Remove parentheses
+          .filter(text => text.length > 2 && /[a-zA-Z]/.test(text)) // Filter meaningful text
+          .join(' ')
+          .slice(0, 10000);
+      }
+      
+      // Fallback to basic text extraction
+      if (!extractedText || extractedText.length < 100) {
+        const basicMatches = pdfString.match(/[A-Za-z0-9\s\.\,\@\-\(\)\+\n\r]+/g);
+        extractedText = basicMatches ? basicMatches.join(' ').slice(0, 5000) : '';
+      }
+      
+      // Clean up the extracted text
+      extractedText = extractedText
+        .replace(/\s+/g, ' ') // Multiple spaces to single space
+        .replace(/[^\w\s\@\.\,\-\(\)\+]/g, ' ') // Remove special characters
+        .trim();
+      
+      return extractedText || 'Unable to extract meaningful text from PDF';
+    } catch (error) {
+      console.error('PDF text extraction error:', error);
+      
+      // Enhanced fallback method
+      const decoder = new TextDecoder('utf-8');
+      const text = decoder.decode(pdfBuffer);
+      const textMatches = text.match(/[A-Za-z0-9\s\.\,\@\-\(\)\+]+/g);
+      return textMatches ? textMatches.join(' ').slice(0, 5000) : 'PDF parsing failed';
+    }
   };
 
   const generateIntelligentMockData = (fileName: string): Partial<ResumeData> => {
